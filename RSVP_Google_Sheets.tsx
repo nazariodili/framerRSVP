@@ -81,8 +81,11 @@ function AutoHeight({
         if (!node) return
 
         const measure = () => {
-            const next = Math.ceil(node.getBoundingClientRect().height) + 2
-            setHeight(next)
+            const next = Math.max(
+                Math.ceil(node.getBoundingClientRect().height),
+                node.scrollHeight
+            )
+            setHeight(next + 4)
         }
         measure()
 
@@ -104,7 +107,9 @@ function AutoHeight({
                 transition: ready ? `height ${durationMs}ms ease` : "none",
             }}
         >
-            <div ref={innerRef}>{children}</div>
+            <div ref={innerRef} style={{ display: "flow-root" }}>
+                {children}
+            </div>
         </div>
     )
 }
