@@ -65,6 +65,47 @@ function toPx(n: number) {
     return `${Math.max(0, Number(n) || 0)}px`
 }
 
+function AutoHeight({
+    children,
+    durationMs = 280,
+}: {
+    children?: React.ReactNode
+    durationMs?: number
+}) {
+    const innerRef = React.useRef<HTMLDivElement | null>(null)
+    const [height, setHeight] = React.useState<number | null>(null)
+    const [ready, setReady] = React.useState(false)
+
+    React.useLayoutEffect(() => {
+        const node = innerRef.current
+        if (!node) return
+
+        const measure = () => setHeight(node.offsetHeight)
+        measure()
+
+        const ro = new ResizeObserver(() => measure())
+        ro.observe(node)
+        return () => ro.disconnect()
+    }, [])
+
+    React.useEffect(() => {
+        const id = requestAnimationFrame(() => setReady(true))
+        return () => cancelAnimationFrame(id)
+    }, [])
+
+    return (
+        <div
+            style={{
+                height: height ?? "auto",
+                overflow: "hidden",
+                transition: ready ? `height ${durationMs}ms ease` : "none",
+            }}
+        >
+            <div ref={innerRef}>{children}</div>
+        </div>
+    )
+}
+
 export default function RSVPGoogleSheets(props: any) {
     const {
         // data + copy
@@ -647,7 +688,7 @@ export default function RSVPGoogleSheets(props: any) {
         divider: {
             height: 1,
             background: dividerColor,
-            margin: "10px 0",
+            margin: "20px 0",
         },
 
         error: {
@@ -833,55 +874,57 @@ export default function RSVPGoogleSheets(props: any) {
                         </button>
                     </div>
 
-                    {searchError ? (
-                        <div style={{ ...s.error, marginTop: 10 }}>
-                            {searchError}
-                        </div>
-                    ) : null}
-
-                    {!selectedGuest && results.length > 0 ? (
-                        <div style={{ marginTop: 10, ...s.resultsScroll }}>
-                            <div style={s.list}>
-                                {results.map((g) => (
-                                    <div
-                                        key={g.guestId}
-                                        style={s.pill(false)}
-                                        onClick={() => loadFamily(g)}
-                                        role="button"
-                                        aria-label={`Seleziona ${g.name}`}
-                                    >
-                                        <div>
-                                            <div
-                                                style={{
-                                                    ...(baseFontStyle || {}),
-                                                    fontSize: 14,
-                                                    fontWeight: 700,
-                                                }}
-                                            >
-                                                {g.name}
-                                            </div>
-                                        </div>
-
-                                        <ChevronRight
-                                            size={20}
-                                            style={{ opacity: 0.6 }}
-                                            aria-hidden="true"
-                                        />
-                                    </div>
-                                ))}
+                    <AutoHeight>
+                        {searchError ? (
+                            <div style={{ ...s.error, marginTop: 10 }}>
+                                {searchError}
                             </div>
-                        </div>
-                    ) : null}
+                        ) : null}
 
-                    {!selectedGuest &&
-                    hasSearched &&
-                    !searchLoading &&
-                    results.length === 0 &&
-                    !searchError ? (
-                        <div style={{ ...s.error, marginTop: 10 }}>
-                            {noResultsText}
-                        </div>
-                    ) : null}
+                        {!selectedGuest && results.length > 0 ? (
+                            <div style={{ marginTop: 10, ...s.resultsScroll }}>
+                                <div style={s.list}>
+                                    {results.map((g) => (
+                                        <div
+                                            key={g.guestId}
+                                            style={s.pill(false)}
+                                            onClick={() => loadFamily(g)}
+                                            role="button"
+                                            aria-label={`Seleziona ${g.name}`}
+                                        >
+                                            <div>
+                                                <div
+                                                    style={{
+                                                        ...(baseFontStyle || {}),
+                                                        fontSize: 14,
+                                                        fontWeight: 700,
+                                                    }}
+                                                >
+                                                    {g.name}
+                                                </div>
+                                            </div>
+
+                                            <ChevronRight
+                                                size={20}
+                                                style={{ opacity: 0.6 }}
+                                                aria-hidden="true"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {!selectedGuest &&
+                        hasSearched &&
+                        !searchLoading &&
+                        results.length === 0 &&
+                        !searchError ? (
+                            <div style={{ ...s.error, marginTop: 10 }}>
+                                {noResultsText}
+                            </div>
+                        ) : null}
+                    </AutoHeight>
                 </div>
             </div>
 
@@ -902,51 +945,52 @@ export default function RSVPGoogleSheets(props: any) {
                         </div>
                     </div>
 
-                    {familyLoading ? (
-                        <div style={{ marginTop: 12, ...s.loadingState }}>
-                            <div style={s.spinner} />
-                            <div
-                                style={{
-                                    ...(baseFontStyle || {}),
-                                    fontSize: 14,
-                                    fontWeight: 800,
-                                }}
-                            >
-                                {loadingGroupTitle}
+                    <AutoHeight>
+                        {familyLoading ? (
+                            <div style={{ marginTop: 12, ...s.loadingState }}>
+                                <div style={s.spinner} />
+                                <div
+                                    style={{
+                                        ...(baseFontStyle || {}),
+                                        fontSize: 14,
+                                        fontWeight: 800,
+                                    }}
+                                >
+                                    {loadingGroupTitle}
+                                </div>
+                                <div style={s.small}>
+                                    {loadingGroupSubtitle}
+                                </div>
                             </div>
-                            <div style={s.small}>
-                                {loadingGroupSubtitle}
+                        ) : null}
+
+                        {!familyLoading && familyError ? (
+                            <div style={{ ...s.error, marginTop: 10 }}>
+                                {familyError}
                             </div>
-                        </div>
-                    ) : null}
+                        ) : null}
 
-                    {!familyLoading && familyError ? (
-                        <div style={{ ...s.error, marginTop: 10 }}>
-                            {familyError}
-                        </div>
-                    ) : null}
-
-                    {!familyLoading && !familyError ? (
-                        <>
-                            {submitted ? (
-                                <div style={{ marginTop: 12 }}>
-                                    <div style={s.success}>
-                                        <div
-                                            style={{
-                                                ...(baseFontStyle || {}),
-                                                fontWeight: 850,
-                                                marginBottom: 6,
-                                            }}
-                                        >
-                                            {successTitle}
-                                        </div>
-                                        <div style={{ ...(baseFontStyle || {}) }}>
-                                            {successSubtitle}
+                        {!familyLoading && !familyError ? (
+                            <>
+                                {submitted ? (
+                                    <div style={{ marginTop: 12 }}>
+                                        <div style={s.success}>
+                                            <div
+                                                style={{
+                                                    ...(baseFontStyle || {}),
+                                                    fontWeight: 850,
+                                                    marginBottom: 6,
+                                                }}
+                                            >
+                                                {successTitle}
+                                            </div>
+                                            <div style={{ ...(baseFontStyle || {}) }}>
+                                                {successSubtitle}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <>
+                                ) : (
+                                    <>
                                     {familyMembers.length > 0 ? (
                                         <div
                                             style={{ ...s.list, marginTop: 12 }}
@@ -1383,10 +1427,11 @@ export default function RSVPGoogleSheets(props: any) {
                                     >
                                         {submitLoading ? submitLoadingLabel : submitLabel}
                                     </button>
-                                </>
-                            )}
-                        </>
-                    ) : null}
+                                    </>
+                                )}
+                            </>
+                        ) : null}
+                    </AutoHeight>
                 </div>
             ) : null}
         </div>
