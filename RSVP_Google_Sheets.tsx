@@ -548,7 +548,7 @@ export default function RSVPGoogleSheets(props: any) {
 
             if (a.attending === false) continue
 
-            if (requireMenuIfAttending && !a.menu.trim()) {
+            if (!a.menu.trim()) {
                 return formatNameMessage(validateMenuErrorTemplate, a.name)
             }
 
@@ -653,7 +653,7 @@ export default function RSVPGoogleSheets(props: any) {
         }
     }
 
-    const requiredMenu = requireMenuIfAttending
+    const requiredMenu = true
     const requiredAllergiesWhenAttending = true
     const requiredShuttleWhenAttending = showShuttle
     const shouldOpenSearchDropdown =
@@ -1383,9 +1383,12 @@ export default function RSVPGoogleSheets(props: any) {
                                                                 }}
                                                             >
                                                                 <select
-                                                                    style={
-                                                                        s.select
-                                                                    }
+                                                                    style={{
+                                                                        ...s.select,
+                                                                        color: a.menu
+                                                                            ? inputTextColor
+                                                                            : mutedTextColor,
+                                                                    }}
                                                                     value={
                                                                         a.menu
                                                                     }
@@ -1404,8 +1407,15 @@ export default function RSVPGoogleSheets(props: any) {
                                                                     aria-label={
                                                                         menuLabel
                                                                     }
+                                                                    required={
+                                                                        menuIsRequired
+                                                                    }
                                                                 >
-                                                                    <option value="">
+                                                                    <option
+                                                                        value=""
+                                                                        disabled
+                                                                        hidden
+                                                                    >
                                                                         {
                                                                             menuPlaceholder
                                                                         }
