@@ -5,6 +5,7 @@ import {
     RotateCcw,
     ChevronRight,
     ChevronDown,
+    X,
     CheckSquare,
     Square,
     CheckCircle2,
@@ -64,12 +65,60 @@ function toPx(n: number) {
     return `${Math.max(0, Number(n) || 0)}px`
 }
 
+function AutoHeight({
+    children,
+    durationMs = 280,
+}: {
+    children?: React.ReactNode
+    durationMs?: number
+}) {
+    const innerRef = React.useRef<HTMLDivElement | null>(null)
+    const [height, setHeight] = React.useState<number | null>(null)
+    const [ready, setReady] = React.useState(false)
+
+    React.useLayoutEffect(() => {
+        const node = innerRef.current
+        if (!node) return
+
+        const measure = () => {
+            const next = Math.max(
+                Math.ceil(node.getBoundingClientRect().height),
+                node.scrollHeight
+            )
+            setHeight(next + 4)
+        }
+        measure()
+
+        const ro = new ResizeObserver(() => measure())
+        ro.observe(node)
+        return () => ro.disconnect()
+    }, [])
+
+    React.useEffect(() => {
+        const id = requestAnimationFrame(() => setReady(true))
+        return () => cancelAnimationFrame(id)
+    }, [])
+
+    return (
+        <div
+            style={{
+                height: height ?? "auto",
+                overflow: "hidden",
+                transition: ready ? `height ${durationMs}ms ease` : "none",
+            }}
+        >
+            <div ref={innerRef} style={{ display: "flow-root" }}>
+                {children}
+            </div>
+        </div>
+    )
+}
+
 export default function RSVPGoogleSheets(props: any) {
     const {
         // data + copy
         endpointUrl,
         title,
-        subtitle,
         searchPlaceholder,
         showShuttle,
         requireMenuIfAttending,
@@ -90,14 +139,34 @@ export default function RSVPGoogleSheets(props: any) {
         shuttleYesText,
         shuttleNoText,
 
+        // service copy
+        endpointMissingText,
+        searchMinCharsError,
+        searchGenericError,
+        noResultsText,
+        familyLoadErrorText,
+        loadingGroupTitle,
+        loadingGroupSubtitle,
+        submitLoadingLabel,
+        submitGenericError,
+        serverInvalidResponseError,
+        noMoreInfoNeededText,
+        validateSelectGuestError,
+        validateSelectPeopleError,
+        validateIncompleteDataError,
+        validateAttendanceErrorTemplate,
+        validateMenuErrorTemplate,
+        validateAllergiesErrorTemplate,
+        validateShuttleErrorTemplate,
+
         // required fields UI
         requiredAsterisk,
-        requiredNote,
 
         // ✅ STYLE PROPS
         font,
         titleFont, // font dedicata al titolo
-        titleTextAlign, // ✅ FIX: align del titolo via wrapper header
+        selectPeopleLabelFont,
+        participantNameFont,
         textColor,
         mutedTextColor,
 
@@ -111,12 +180,6 @@ export default function RSVPGoogleSheets(props: any) {
         cardRadius,
         cardPadding,
 
-        titleSize,
-        titleWeight,
-        subtitleSize,
-
-        labelSize,
-        labelWeight,
 
         smallSize,
 
@@ -154,12 +217,17 @@ export default function RSVPGoogleSheets(props: any) {
 
     const baseFontStyle = (font || {}) as React.CSSProperties
     const titleFontStyle = (titleFont || {}) as React.CSSProperties
-
-    // ✅ robust: applichiamo align a un wrapper full-width
+    const selectPeopleLabelFontStyle =
+        (selectPeopleLabelFont || {}) as React.CSSProperties
+    const participantNameFontStyle =
+        (participantNameFont || {}) as React.CSSProperties
     const headerAlign: React.CSSProperties["textAlign"] =
-        titleTextAlign === "center" || titleTextAlign === "right"
-            ? titleTextAlign
-            : "left"
+        (titleFontStyle.textAlign as React.CSSProperties["textAlign"]) || "left"
+
+
+    function formatNameMessage(template: string, name: string) {
+        return template.replace("{name}", name)
+    }
 
     const [query, setQuery] = React.useState("")
 
@@ -211,7 +279,7 @@ export default function RSVPGoogleSheets(props: any) {
             return
         }
         if (q.length < 2) {
-            setSearchError("Scrivi almeno 2 caratteri.")
+            setSearchError(searchMinCharsError)
             setResults([])
             return
         }
@@ -228,7 +296,7 @@ export default function RSVPGoogleSheets(props: any) {
             const data = await fetchJson(url, { method: "GET" })
             setResults(Array.isArray(data?.results) ? data.results : [])
         } catch (e: any) {
-            setSearchError(e?.message || "Errore durante la ricerca.")
+            setSearchError(e?.message || searchGenericError)
             setResults([])
         } finally {
             setSearchLoading(false)
@@ -285,7 +353,7 @@ export default function RSVPGoogleSheets(props: any) {
             }
             setAnswers(next)
         } catch (e: any) {
-            setFamilyError(e?.message || "Errore nel caricamento del gruppo.")
+            setFamilyError(e?.message || familyLoadErrorText)
             setFamilyMembers([])
             setSelectedMemberIds(new Set())
             setAnswers({})
@@ -339,28 +407,28 @@ export default function RSVPGoogleSheets(props: any) {
     )
 
     function validate(): string | null {
-        if (!selectedGuest) return "Seleziona prima un invitato."
+        if (!selectedGuest) return validateSelectGuestError
         const chosen = Array.from(selectedMemberIds)
-        if (chosen.length === 0) return "Seleziona almeno una persona."
+        if (chosen.length === 0) return validateSelectPeopleError
 
         for (const id of chosen) {
             const a = answers[id]
-            if (!a) return "Dati incompleti: riprova."
+            if (!a) return validateIncompleteDataError
             if (a.attending === null)
-                return `Seleziona la presenza per ${a.name}.`
+                return formatNameMessage(validateAttendanceErrorTemplate, a.name)
 
             if (a.attending === false) continue
 
             if (requireMenuIfAttending && !a.menu.trim()) {
-                return `Scegli un menu per ${a.name}.`
+                return formatNameMessage(validateMenuErrorTemplate, a.name)
             }
 
             if (!a.allergies.trim()) {
-                return `Compila “Allergie / Intolleranze” per ${a.name} (se non ci sono, scrivi “Nessuna”).`
+                return formatNameMessage(validateAllergiesErrorTemplate, a.name)
             }
 
             if (showShuttle && a.shuttle === null) {
-                return `Seleziona “Bus navetta” (Sì/No) per ${a.name}.`
+                return formatNameMessage(validateShuttleErrorTemplate, a.name)
             }
         }
         return null
@@ -417,7 +485,7 @@ export default function RSVPGoogleSheets(props: any) {
             }
 
             if (text && !parsed.ok) {
-                throw new Error("Risposta non valida dal server.")
+                throw new Error(serverInvalidResponseError)
             }
 
             setSubmitted(true)
@@ -426,7 +494,7 @@ export default function RSVPGoogleSheets(props: any) {
         } catch (e: any) {
             setSubmitted(false)
             setSubmitStatus("error")
-            setSubmitError(e?.message || "Errore durante l'invio.")
+            setSubmitError(e?.message || submitGenericError)
         } finally {
             setSubmitLoading(false)
         }
@@ -445,6 +513,15 @@ export default function RSVPGoogleSheets(props: any) {
         setSubmitError(null)
         setFamilyError(null)
         setSubmitStatus("idle")
+    }
+
+    function clearSearchInput() {
+        setQuery("")
+        setSearchError(null)
+        setHasSearched(false)
+        if (!selectedGuest) {
+            setResults([])
+        }
     }
 
     const requiredMenu = requireMenuIfAttending
@@ -492,20 +569,7 @@ export default function RSVPGoogleSheets(props: any) {
         h1: {
             ...(baseFontStyle || {}),
             ...(titleFontStyle || {}),
-            fontSize: titleSize,
-            fontWeight: titleWeight,
             margin: 0,
-            lineHeight: 1.2,
-            width: "100%",
-            display: "block",
-        } as React.CSSProperties,
-
-        p: {
-            ...(baseFontStyle || {}),
-            fontSize: subtitleSize,
-            margin: "6px 0 0 0",
-            color: mutedTextColor,
-            lineHeight: 1.35,
             width: "100%",
             display: "block",
         } as React.CSSProperties,
@@ -632,7 +696,7 @@ export default function RSVPGoogleSheets(props: any) {
         divider: {
             height: 1,
             background: dividerColor,
-            margin: "10px 0",
+            margin: "20px 0",
         },
 
         error: {
@@ -675,13 +739,6 @@ export default function RSVPGoogleSheets(props: any) {
             border: "2px solid rgba(0,0,0,0.18)",
             borderTopColor: "rgba(0,0,0,0.7)",
             animation: "rsvpSpin 0.8s linear infinite",
-        },
-
-        requiredNoteStyle: {
-            ...(baseFontStyle || {}),
-            fontSize: smallSize,
-            color: mutedTextColor,
-            marginTop: 10,
         },
     } as const
 
@@ -740,34 +797,66 @@ export default function RSVPGoogleSheets(props: any) {
                 {/* ✅ header wrapper con align */}
                 <div style={s.header}>
                     <h1 style={s.h1}>{title}</h1>
-                    {subtitle ? <p style={s.p}>{subtitle}</p> : null}
+                    
                 </div>
 
                 {!endpointBase ? (
                     <div style={{ ...s.error, marginTop: 10 }}>
-                        Inserisci <b>endpointUrl</b> (URL Web App di Apps
-                        Script) nelle proprietà del componente in Framer.
+                        {endpointMissingText}
                     </div>
                 ) : null}
 
                 <div style={{ marginTop: 12 }}>
                     <div style={{ display: "flex", gap: 10 }}>
-                        <input
-                            style={s.input}
-                            value={query}
-                            placeholder={searchPlaceholder}
-                            onChange={(e) => {
-                                setQuery(e.target.value)
-                                setSearchError(null)
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault()
-                                    if (isResetMode) resetAll()
-                                    else runSearch()
-                                }
-                            }}
-                        />
+                        <div style={{ position: "relative", flex: 1 }}>
+                            <input
+                                style={{
+                                    ...s.input,
+                                    paddingRight: query.trim() ? 42 : toPx(inputPaddingX),
+                                }}
+                                value={query}
+                                placeholder={searchPlaceholder}
+                                onChange={(e) => {
+                                    setQuery(e.target.value)
+                                    setSearchError(null)
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault()
+                                        runSearch()
+                                    }
+                                }}
+                            />
+
+                            {query.trim() ? (
+                                <button
+                                    type="button"
+                                    onClick={clearSearchInput}
+                                    disabled={searchLoading || familyLoading || submitLoading}
+                                    aria-label="Svuota campo ricerca"
+                                    title="Svuota"
+                                    style={{
+                                        position: "absolute",
+                                        right: 10,
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: 999,
+                                        border: "none",
+                                        background: "transparent",
+                                        color: mutedTextColor,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        padding: 0,
+                                    }}
+                                >
+                                    <X size={16} />
+                                </button>
+                            ) : null}
+                        </div>
 
                         <button
                             style={isResetMode ? s.btnInlineGhost : s.btnInline}
@@ -793,55 +882,57 @@ export default function RSVPGoogleSheets(props: any) {
                         </button>
                     </div>
 
-                    {searchError ? (
-                        <div style={{ ...s.error, marginTop: 10 }}>
-                            {searchError}
-                        </div>
-                    ) : null}
-
-                    {!selectedGuest && results.length > 0 ? (
-                        <div style={{ marginTop: 10, ...s.resultsScroll }}>
-                            <div style={s.list}>
-                                {results.map((g) => (
-                                    <div
-                                        key={g.guestId}
-                                        style={s.pill(false)}
-                                        onClick={() => loadFamily(g)}
-                                        role="button"
-                                        aria-label={`Seleziona ${g.name}`}
-                                    >
-                                        <div>
-                                            <div
-                                                style={{
-                                                    ...(baseFontStyle || {}),
-                                                    fontSize: 14,
-                                                    fontWeight: 700,
-                                                }}
-                                            >
-                                                {g.name}
-                                            </div>
-                                        </div>
-
-                                        <ChevronRight
-                                            size={20}
-                                            style={{ opacity: 0.6 }}
-                                            aria-hidden="true"
-                                        />
-                                    </div>
-                                ))}
+                    <AutoHeight>
+                        {searchError ? (
+                            <div style={{ ...s.error, marginTop: 10 }}>
+                                {searchError}
                             </div>
-                        </div>
-                    ) : null}
+                        ) : null}
 
-                    {!selectedGuest &&
-                    hasSearched &&
-                    !searchLoading &&
-                    results.length === 0 &&
-                    !searchError ? (
-                        <div style={{ ...s.error, marginTop: 10 }}>
-                            Nessun risultato trovato. Prova con un altro nome.
-                        </div>
-                    ) : null}
+                        {!selectedGuest && results.length > 0 ? (
+                            <div style={{ marginTop: 10, ...s.resultsScroll }}>
+                                <div style={s.list}>
+                                    {results.map((g) => (
+                                        <div
+                                            key={g.guestId}
+                                            style={s.pill(false)}
+                                            onClick={() => loadFamily(g)}
+                                            role="button"
+                                            aria-label={`Seleziona ${g.name}`}
+                                        >
+                                            <div>
+                                                <div
+                                                    style={{
+                                                        ...(baseFontStyle || {}),
+                                                        fontSize: 14,
+                                                        fontWeight: 700,
+                                                    }}
+                                                >
+                                                    {g.name}
+                                                </div>
+                                            </div>
+
+                                            <ChevronRight
+                                                size={20}
+                                                style={{ opacity: 0.6 }}
+                                                aria-hidden="true"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {!selectedGuest &&
+                        hasSearched &&
+                        !searchLoading &&
+                        results.length === 0 &&
+                        !searchError ? (
+                            <div style={{ ...s.error, marginTop: 10 }}>
+                                {noResultsText}
+                            </div>
+                        ) : null}
+                    </AutoHeight>
                 </div>
             </div>
 
@@ -852,8 +943,7 @@ export default function RSVPGoogleSheets(props: any) {
                         <div
                             style={{
                                 ...(baseFontStyle || {}),
-                                fontSize: titleSize - 2,
-                                fontWeight: titleWeight,
+                                ...(selectPeopleLabelFontStyle || {}),
                                 marginTop: 4,
                                 marginBottom: 8,
                                 lineHeight: 1.2,
@@ -863,51 +953,52 @@ export default function RSVPGoogleSheets(props: any) {
                         </div>
                     </div>
 
-                    {familyLoading ? (
-                        <div style={{ marginTop: 12, ...s.loadingState }}>
-                            <div style={s.spinner} />
-                            <div
-                                style={{
-                                    ...(baseFontStyle || {}),
-                                    fontSize: 14,
-                                    fontWeight: 800,
-                                }}
-                            >
-                                Sto caricando il tuo gruppo…
+                    <AutoHeight>
+                        {familyLoading ? (
+                            <div style={{ marginTop: 12, ...s.loadingState }}>
+                                <div style={s.spinner} />
+                                <div
+                                    style={{
+                                        ...(baseFontStyle || {}),
+                                        fontSize: 14,
+                                        fontWeight: 800,
+                                    }}
+                                >
+                                    {loadingGroupTitle}
+                                </div>
+                                <div style={s.small}>
+                                    {loadingGroupSubtitle}
+                                </div>
                             </div>
-                            <div style={s.small}>
-                                Un secondo e ti mostro le persone collegate.
+                        ) : null}
+
+                        {!familyLoading && familyError ? (
+                            <div style={{ ...s.error, marginTop: 10 }}>
+                                {familyError}
                             </div>
-                        </div>
-                    ) : null}
+                        ) : null}
 
-                    {!familyLoading && familyError ? (
-                        <div style={{ ...s.error, marginTop: 10 }}>
-                            {familyError}
-                        </div>
-                    ) : null}
-
-                    {!familyLoading && !familyError ? (
-                        <>
-                            {submitted ? (
-                                <div style={{ marginTop: 12 }}>
-                                    <div style={s.success}>
-                                        <div
-                                            style={{
-                                                ...(baseFontStyle || {}),
-                                                fontWeight: 850,
-                                                marginBottom: 6,
-                                            }}
-                                        >
-                                            {successTitle}
-                                        </div>
-                                        <div style={{ ...(baseFontStyle || {}) }}>
-                                            {successSubtitle}
+                        {!familyLoading && !familyError ? (
+                            <>
+                                {submitted ? (
+                                    <div style={{ marginTop: 12 }}>
+                                        <div style={s.success}>
+                                            <div
+                                                style={{
+                                                    ...(baseFontStyle || {}),
+                                                    fontWeight: 850,
+                                                    marginBottom: 6,
+                                                }}
+                                            >
+                                                {successTitle}
+                                            </div>
+                                            <div style={{ ...(baseFontStyle || {}) }}>
+                                                {successSubtitle}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <>
+                                ) : (
+                                    <>
                                     {familyMembers.length > 0 ? (
                                         <div
                                             style={{ ...s.list, marginTop: 12 }}
@@ -990,8 +1081,8 @@ export default function RSVPGoogleSheets(props: any) {
                                                     style={{
                                                         ...(baseFontStyle ||
                                                             {}),
-                                                        fontSize: 15,
-                                                        fontWeight: 850,
+                                                        ...(participantNameFontStyle ||
+                                                            {}),
                                                     }}
                                                 >
                                                     {a.name}
@@ -1319,28 +1410,12 @@ export default function RSVPGoogleSheets(props: any) {
                                                             ...s.small,
                                                         }}
                                                     >
-                                                        Ok — nessun’altra
-                                                        informazione necessaria.
+                                                        {noMoreInfoNeededText}
                                                     </div>
                                                 )}
                                             </div>
                                         )
                                     })}
-
-                                    <div style={s.requiredNoteStyle}>
-                                        <span
-                                            style={{
-                                                ...(baseFontStyle || {}),
-                                                color: errorTextColor,
-                                                fontWeight: 800,
-                                                marginRight: 6,
-                                            }}
-                                            aria-hidden="true"
-                                        >
-                                            {requiredAsterisk}
-                                        </span>
-                                        {requiredNote}
-                                    </div>
 
                                     {submitError ? (
                                         <div
@@ -1358,12 +1433,13 @@ export default function RSVPGoogleSheets(props: any) {
                                         onClick={submit}
                                         disabled={submitLoading}
                                     >
-                                        {submitLoading ? "Invio…" : submitLabel}
+                                        {submitLoading ? submitLoadingLabel : submitLabel}
                                     </button>
-                                </>
-                            )}
-                        </>
-                    ) : null}
+                                    </>
+                                )}
+                            </>
+                        ) : null}
+                    </AutoHeight>
                 </div>
             ) : null}
         </div>
@@ -1372,8 +1448,6 @@ export default function RSVPGoogleSheets(props: any) {
 
 RSVPGoogleSheets.defaultProps = {
     title: "Conferma la tua presenza",
-    subtitle:
-        "Cerca il tuo nome, seleziona le persone del tuo gruppo e compila in pochi secondi.",
     searchPlaceholder: "Cerca il tuo nome…",
     endpointUrl: "",
     showShuttle: true,
@@ -1395,17 +1469,50 @@ RSVPGoogleSheets.defaultProps = {
     resetLabel: "Ricomincia",
     searchButtonLabel: "Cerca",
 
+    endpointMissingText:
+        "Inserisci endpointUrl (URL Web App di Apps Script) nelle proprietà del componente in Framer.",
+    searchMinCharsError: "Scrivi almeno 2 caratteri.",
+    searchGenericError: "Errore durante la ricerca.",
+    noResultsText: "Nessun risultato trovato. Prova con un altro nome.",
+    familyLoadErrorText: "Errore nel caricamento del gruppo.",
+    loadingGroupTitle: "Sto caricando il tuo gruppo…",
+    loadingGroupSubtitle: "Un secondo e ti mostro le persone collegate.",
+    submitLoadingLabel: "Invio…",
+    submitGenericError: "Errore durante l'invio.",
+    serverInvalidResponseError: "Risposta non valida dal server.",
+    noMoreInfoNeededText: "Ok — nessun’altra informazione necessaria.",
+
+    validateSelectGuestError: "Seleziona prima un invitato.",
+    validateSelectPeopleError: "Seleziona almeno una persona.",
+    validateIncompleteDataError: "Dati incompleti: riprova.",
+    validateAttendanceErrorTemplate: "Seleziona la presenza per {name}.",
+    validateMenuErrorTemplate: "Scegli un menu per {name}.",
+    validateAllergiesErrorTemplate:
+        "Compila “Allergie / Intolleranze” per {name} (se non ci sono, scrivi “Nessuna”).",
+    validateShuttleErrorTemplate:
+        "Seleziona “Bus navetta” (Sì/No) per {name}.",
+
     commonBorderColor: "rgba(0,0,0,0.12)",
     commonBorderWidth: 1,
 
     requiredAsterisk: "*",
-    requiredNote: "Campo obbligatorio.",
 
     // ✅ NEW
-    titleTextAlign: "left",
     titleFont: {
         fontSize: 18,
         variant: "Bold",
+        letterSpacing: "0em",
+        lineHeight: "1.2em",
+    },
+    selectPeopleLabelFont: {
+        fontSize: 16,
+        variant: "Bold",
+        letterSpacing: "0em",
+        lineHeight: "1.2em",
+    },
+    participantNameFont: {
+        fontSize: 15,
+        variant: "Extra Bold",
         letterSpacing: "0em",
         lineHeight: "1.2em",
     },
@@ -1429,13 +1536,6 @@ RSVPGoogleSheets.defaultProps = {
     cardBorderWidth: 1,
     cardRadius: 14,
     cardPadding: 14,
-
-    titleSize: 18,
-    titleWeight: 700,
-    subtitleSize: 13,
-
-    labelSize: 12,
-    labelWeight: 700,
 
     smallSize: 12,
 
@@ -1484,16 +1584,31 @@ addPropertyControls(RSVPGoogleSheets, {
             lineHeight: "1.2em",
         },
     },
-    titleTextAlign: {
-        type: ControlType.Enum,
-        title: "Titolo · Align",
-        options: ["left", "center", "right"],
-        optionTitles: ["Left", "Center", "Right"],
-        defaultValue: "left",
-    },
-
     title: { type: ControlType.String, title: "Titolo" },
-    subtitle: { type: ControlType.String, title: "Sottotitolo" },
+    selectPeopleLabelFont: {
+        type: ControlType.Font,
+        title: "Gruppo · Font",
+        controls: "extended",
+        defaultFontType: "sans-serif",
+        defaultValue: {
+            fontSize: 16,
+            variant: "Bold",
+            letterSpacing: "0em",
+            lineHeight: "1.2em",
+        },
+    },
+    participantNameFont: {
+        type: ControlType.Font,
+        title: "Partecipante · Font",
+        controls: "extended",
+        defaultFontType: "sans-serif",
+        defaultValue: {
+            fontSize: 15,
+            variant: "Extra Bold",
+            letterSpacing: "0em",
+            lineHeight: "1.2em",
+        },
+    },
     searchPlaceholder: {
         type: ControlType.String,
         title: "Placeholder ricerca",
@@ -1542,6 +1657,56 @@ addPropertyControls(RSVPGoogleSheets, {
     searchButtonLabel: { type: ControlType.String, title: "Testo Cerca" },
     resetLabel: { type: ControlType.String, title: "Testo Ricomincia" },
 
+    endpointMissingText: {
+        type: ControlType.String,
+        title: "Mess. endpoint mancante",
+    },
+    searchMinCharsError: { type: ControlType.String, title: "Err. ricerca corta" },
+    searchGenericError: { type: ControlType.String, title: "Err. ricerca" },
+    noResultsText: { type: ControlType.String, title: "Mess. no risultati" },
+    familyLoadErrorText: { type: ControlType.String, title: "Err. caricamento gruppo" },
+    loadingGroupTitle: { type: ControlType.String, title: "Caricamento titolo" },
+    loadingGroupSubtitle: { type: ControlType.String, title: "Caricamento testo" },
+    submitLoadingLabel: { type: ControlType.String, title: "Invio in corso" },
+    submitGenericError: { type: ControlType.String, title: "Err. invio" },
+    serverInvalidResponseError: {
+        type: ControlType.String,
+        title: "Err. risposta server",
+    },
+    noMoreInfoNeededText: {
+        type: ControlType.String,
+        title: "Mess. nessuna info",
+    },
+
+    validateSelectGuestError: {
+        type: ControlType.String,
+        title: "Err. seleziona invitato",
+    },
+    validateSelectPeopleError: {
+        type: ControlType.String,
+        title: "Err. seleziona persone",
+    },
+    validateIncompleteDataError: {
+        type: ControlType.String,
+        title: "Err. dati incompleti",
+    },
+    validateAttendanceErrorTemplate: {
+        type: ControlType.String,
+        title: "Err. presenza ({name})",
+    },
+    validateMenuErrorTemplate: {
+        type: ControlType.String,
+        title: "Err. menu ({name})",
+    },
+    validateAllergiesErrorTemplate: {
+        type: ControlType.String,
+        title: "Err. allergie ({name})",
+    },
+    validateShuttleErrorTemplate: {
+        type: ControlType.String,
+        title: "Err. navetta ({name})",
+    },
+
     commonBorderColor: {
         type: ControlType.Color,
         title: "Border (global) color",
@@ -1559,12 +1724,6 @@ addPropertyControls(RSVPGoogleSheets, {
         title: "Asterisco obblig.",
         defaultValue: "*",
     },
-    requiredNote: {
-        type: ControlType.String,
-        title: "Nota obbligatori",
-        defaultValue: "Campo obbligatorio.",
-    },
-
     font: {
         type: ControlType.Font,
         title: "Font",
@@ -1624,42 +1783,6 @@ addPropertyControls(RSVPGoogleSheets, {
         step: 1,
     },
 
-    titleSize: {
-        type: ControlType.Number,
-        title: "Titolo size",
-        min: 10,
-        max: 40,
-        step: 1,
-    },
-    titleWeight: {
-        type: ControlType.Number,
-        title: "Titolo weight",
-        min: 100,
-        max: 900,
-        step: 50,
-    },
-    subtitleSize: {
-        type: ControlType.Number,
-        title: "Sottotitolo size",
-        min: 10,
-        max: 24,
-        step: 1,
-    },
-
-    labelSize: {
-        type: ControlType.Number,
-        title: "Label size",
-        min: 10,
-        max: 24,
-        step: 1,
-    },
-    labelWeight: {
-        type: ControlType.Number,
-        title: "Label weight",
-        min: 100,
-        max: 900,
-        step: 50,
-    },
     smallSize: {
         type: ControlType.Number,
         title: "Small size",
