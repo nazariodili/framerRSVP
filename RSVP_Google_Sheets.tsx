@@ -754,17 +754,20 @@ export default function RSVPGoogleSheets(props: any) {
             zIndex: 10,
             background: wrapBackground,
             display: "flex",
-            alignItems: "center",
+            alignItems: "stretch",
             justifyContent: "center",
             padding: `${(wrapPadding?.top ?? 16) as number}px ${(wrapPadding?.right ?? 16) as number}px ${(wrapPadding?.bottom ?? 16) as number}px ${(wrapPadding?.left ?? 16) as number}px`,
             boxSizing: "border-box" as const,
             overflowY: "auto" as const,
+            overflowX: "hidden" as const,
         },
 
         successOverlayInner: {
             width: "100%",
             maxWidth: 780,
-            minHeight: "100%",
+            minHeight: "fit-content",
+            height: "fit-content",
+            margin: "auto",
             display: "flex",
             flexDirection: "column" as const,
             alignItems: "center",
@@ -776,14 +779,16 @@ export default function RSVPGoogleSheets(props: any) {
         },
 
         successSubtitleLarge: {
-            ...(baseFontStyle || {}),
             margin: 0,
             color: successTextColor,
-            fontSize: "clamp(32px, 7vw, 88px)",
-            lineHeight: 1.05,
+            fontFamily: baseFontStyle.fontFamily,
+            fontSize: "clamp(24px, 5vw, 72px)",
+            lineHeight: 1.08,
             fontWeight: 700,
             maxWidth: 900,
             textWrap: "balance" as const,
+            whiteSpace: "normal" as const,
+            overflowWrap: "anywhere" as const,
         },
 
         successResetButton: {
