@@ -236,6 +236,7 @@ export default function RSVPGoogleSheets(props: any) {
         validateShuttleErrorTemplate,
 
         // required fields UI
+        requiredPlaceholderLabel,
 
         // ✅ STYLE PROPS
         font,
@@ -655,7 +656,6 @@ export default function RSVPGoogleSheets(props: any) {
     const requiredMenu = true
     const requiredAllergiesWhenAttending = true
     const requiredShuttleWhenAttending = showShuttle
-    const requiredPlaceholderLabel = " (Obbligatorio)"
     const shouldOpenSearchDropdown =
         !selectedGuest &&
         !!query.trim() &&
@@ -1269,7 +1269,7 @@ export default function RSVPGoogleSheets(props: any) {
                                             allergiesIsRequired
                                                 ? requiredPlaceholderLabel
                                                 : ""
-                                        } (se nessuna, scrivi “Nessuna”)`
+                                        }`
 
                                         const notesPlaceholder = `${notesLabel} (opzionale)`
 
@@ -1701,6 +1701,7 @@ RSVPGoogleSheets.defaultProps = {
     shuttleNoText: "No bus",
     menuLabel: "Menu",
     allergiesLabel: "Allergie / Intolleranze",
+    requiredPlaceholderLabel: " (Obbligatorio)",
     shuttleLabel: "Voglio il bus navetta",
     notesLabel: "Note",
     selectPeopleLabel: "Seleziona chi fa parte del tuo gruppo",
@@ -1886,6 +1887,10 @@ addPropertyControls(RSVPGoogleSheets, {
     },
     menuLabel: { type: ControlType.String, title: "Label menu" },
     allergiesLabel: { type: ControlType.String, title: "Label allergie" },
+    requiredPlaceholderLabel: {
+        type: ControlType.String,
+        title: "Label obbligatorio",
+    },
     shuttleLabel: { type: ControlType.String, title: "Label navetta" },
     notesLabel: { type: ControlType.String, title: "Label note" },
     selectPeopleLabel: { type: ControlType.String, title: "Label gruppo" },
