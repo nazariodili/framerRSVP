@@ -134,6 +134,7 @@ export default function RSVPGoogleSheets(props: any) {
         submitLabel,
         successTitle,
         successSubtitle,
+        successLottieFile,
         resetLabel,
         searchButtonLabel,
         shuttleYesText,
@@ -214,6 +215,33 @@ export default function RSVPGoogleSheets(props: any) {
         successBackground,
         successBorderColor,
     } = props
+
+    const [lottieReady, setLottieReady] = React.useState(false)
+
+    React.useEffect(() => {
+        if (typeof window === "undefined") return
+        if (customElements.get("lottie-player")) {
+            setLottieReady(true)
+            return
+        }
+
+        const scriptId = "lottie-player-loader"
+        const existingScript = document.getElementById(scriptId)
+        if (existingScript) {
+            existingScript.addEventListener("load", () => setLottieReady(true), {
+                once: true,
+            })
+            return
+        }
+
+        const script = document.createElement("script")
+        script.id = scriptId
+        script.src =
+            "https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"
+        script.async = true
+        script.onload = () => setLottieReady(true)
+        document.head.appendChild(script)
+    }, [])
 
     const baseFontStyle = (font || {}) as React.CSSProperties
     const titleFontStyle = (titleFont || {}) as React.CSSProperties
@@ -542,6 +570,7 @@ export default function RSVPGoogleSheets(props: any) {
             height: "100%",
             display: "flex",
             flexDirection: "column" as const,
+            position: "relative" as const,
             gap: typeof wrapGap === "number" ? wrapGap : 12,
             padding: `${(wrapPadding?.top ?? 16) as number}px ${
                 (wrapPadding?.right ?? 16) as number
@@ -717,6 +746,55 @@ export default function RSVPGoogleSheets(props: any) {
             border: `${UI_BORDER_WIDTH}px solid ${UI_BORDER_COLOR}`,
             padding: "12px 12px",
             borderRadius: inputRadius,
+        },
+
+        successOverlay: {
+            position: "absolute" as const,
+            inset: 0,
+            zIndex: 10,
+            background: wrapBackground,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: `${(wrapPadding?.top ?? 16) as number}px ${(wrapPadding?.right ?? 16) as number}px ${(wrapPadding?.bottom ?? 16) as number}px ${(wrapPadding?.left ?? 16) as number}px`,
+            boxSizing: "border-box" as const,
+        },
+
+        successOverlayInner: {
+            width: "100%",
+            maxWidth: 780,
+            minHeight: "100%",
+            display: "flex",
+            flexDirection: "column" as const,
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 24,
+            textAlign: "center" as const,
+        },
+
+        successSubtitleLarge: {
+            ...(baseFontStyle || {}),
+            margin: 0,
+            color: successTextColor,
+            fontSize:
+                typeof baseFontStyle.fontSize === "number"
+                    ? baseFontStyle.fontSize * 2.4
+                    : 64,
+            lineHeight: 1.05,
+            fontWeight: 700,
+            maxWidth: 900,
+        },
+
+        successResetButton: {
+            ...(baseFontStyle || {}),
+            borderRadius: buttonRadius,
+            border: `${UI_BORDER_WIDTH}px solid ${buttonBorderColor}`,
+            background: buttonGhostBackground,
+            color: buttonGhostTextColor,
+            fontSize: buttonFontSize,
+            fontWeight: buttonFontWeight,
+            padding: "12px 28px",
+            cursor: "pointer",
         },
 
         loadingState: {
@@ -980,25 +1058,6 @@ export default function RSVPGoogleSheets(props: any) {
 
                         {!familyLoading && !familyError ? (
                             <>
-                                {submitted ? (
-                                    <div style={{ marginTop: 12 }}>
-                                        <div style={s.success}>
-                                            <div
-                                                style={{
-                                                    ...(baseFontStyle || {}),
-                                                    fontWeight: 850,
-                                                    marginBottom: 6,
-                                                }}
-                                            >
-                                                {successTitle}
-                                            </div>
-                                            <div style={{ ...(baseFontStyle || {}) }}>
-                                                {successSubtitle}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
                                     {familyMembers.length > 0 ? (
                                         <div
                                             style={{ ...s.list, marginTop: 12 }}
@@ -1435,11 +1494,47 @@ export default function RSVPGoogleSheets(props: any) {
                                     >
                                         {submitLoading ? submitLoadingLabel : submitLabel}
                                     </button>
-                                    </>
-                                )}
                             </>
                         ) : null}
                     </AutoHeight>
+                </div>
+            ) : null}
+
+            {submitted ? (
+                <div style={s.successOverlay}>
+                    <div style={s.successOverlayInner}>
+                        {successLottieFile && lottieReady ? (
+                            <div style={{ width: 190, height: 190 }}>
+                                {React.createElement("lottie-player", {
+                                    src: successLottieFile,
+                                    background: "transparent",
+                                    speed: "1",
+                                    style: {
+                                        width: "100%",
+                                        height: "100%",
+                                    },
+                                    loop: true,
+                                    autoplay: true,
+                                })}
+                            </div>
+                        ) : null}
+
+                        <div
+                            style={{
+                                ...(baseFontStyle || {}),
+                                color: mutedTextColor,
+                                fontWeight: 700,
+                            }}
+                        >
+                            {successTitle}
+                        </div>
+
+                        <p style={s.successSubtitleLarge}>{successSubtitle}</p>
+
+                        <button style={s.successResetButton} onClick={resetAll}>
+                            {resetLabel}
+                        </button>
+                    </div>
                 </div>
             ) : null}
         </div>
@@ -1465,7 +1560,8 @@ RSVPGoogleSheets.defaultProps = {
     selectPeopleLabel: "Seleziona chi fa parte del tuo gruppo",
     submitLabel: "Invia",
     successTitle: "Ricevuto! 🎉",
-    successSubtitle: "Grazie — abbiamo salvato la tua risposta.",
+    successSubtitle: "Grazie, abbiamo salvato la tua risposta",
+    successLottieFile: "",
     resetLabel: "Ricomincia",
     searchButtonLabel: "Cerca",
 
@@ -1653,6 +1749,11 @@ addPropertyControls(RSVPGoogleSheets, {
     submitLabel: { type: ControlType.String, title: "Testo bottone" },
     successTitle: { type: ControlType.String, title: "Titolo successo" },
     successSubtitle: { type: ControlType.String, title: "Testo successo" },
+    successLottieFile: {
+        type: ControlType.File,
+        title: "Lottie JSON",
+        allowedFileTypes: ["json"],
+    },
 
     searchButtonLabel: { type: ControlType.String, title: "Testo Cerca" },
     resetLabel: { type: ControlType.String, title: "Testo Ricomincia" },
