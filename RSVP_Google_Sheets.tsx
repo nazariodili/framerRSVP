@@ -117,6 +117,7 @@ export default function RSVPGoogleSheets(props: any) {
         font,
         titleFont, // font dedicata al titolo
         selectPeopleLabelFont,
+        participantNameFont,
         textColor,
         mutedTextColor,
 
@@ -169,6 +170,8 @@ export default function RSVPGoogleSheets(props: any) {
     const titleFontStyle = (titleFont || {}) as React.CSSProperties
     const selectPeopleLabelFontStyle =
         (selectPeopleLabelFont || {}) as React.CSSProperties
+    const participantNameFontStyle =
+        (participantNameFont || {}) as React.CSSProperties
     const headerAlign: React.CSSProperties["textAlign"] =
         (titleFontStyle.textAlign as React.CSSProperties["textAlign"]) || "left"
 
@@ -1026,8 +1029,8 @@ export default function RSVPGoogleSheets(props: any) {
                                                     style={{
                                                         ...(baseFontStyle ||
                                                             {}),
-                                                        fontSize: 15,
-                                                        fontWeight: 850,
+                                                        ...(participantNameFontStyle ||
+                                                            {}),
                                                     }}
                                                 >
                                                     {a.name}
@@ -1454,6 +1457,12 @@ RSVPGoogleSheets.defaultProps = {
         letterSpacing: "0em",
         lineHeight: "1.2em",
     },
+    participantNameFont: {
+        fontSize: 15,
+        variant: "Extra Bold",
+        letterSpacing: "0em",
+        lineHeight: "1.2em",
+    },
 
     font: {
         fontSize: 16,
@@ -1531,6 +1540,18 @@ addPropertyControls(RSVPGoogleSheets, {
         defaultValue: {
             fontSize: 16,
             variant: "Bold",
+            letterSpacing: "0em",
+            lineHeight: "1.2em",
+        },
+    },
+    participantNameFont: {
+        type: ControlType.Font,
+        title: "Partecipante · Font",
+        controls: "extended",
+        defaultFontType: "sans-serif",
+        defaultValue: {
+            fontSize: 15,
+            variant: "Extra Bold",
             letterSpacing: "0em",
             lineHeight: "1.2em",
         },
