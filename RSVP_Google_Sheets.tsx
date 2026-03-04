@@ -749,25 +749,19 @@ export default function RSVPGoogleSheets(props: any) {
         },
 
         successOverlay: {
-            position: "absolute" as const,
-            inset: 0,
-            zIndex: 10,
-            background: wrapBackground,
+            width: "100%",
+            minHeight: "100%",
             display: "flex",
-            alignItems: "stretch",
+            alignItems: "center",
             justifyContent: "center",
-            padding: `${(wrapPadding?.top ?? 16) as number}px ${(wrapPadding?.right ?? 16) as number}px ${(wrapPadding?.bottom ?? 16) as number}px ${(wrapPadding?.left ?? 16) as number}px`,
             boxSizing: "border-box" as const,
-            overflowY: "auto" as const,
-            overflowX: "hidden" as const,
+            padding: `${(wrapPadding?.top ?? 16) as number}px ${(wrapPadding?.right ?? 16) as number}px ${(wrapPadding?.bottom ?? 16) as number}px ${(wrapPadding?.left ?? 16) as number}px`,
+            background: wrapBackground,
         },
 
         successOverlayInner: {
             width: "100%",
             maxWidth: 780,
-            minHeight: "fit-content",
-            height: "fit-content",
-            margin: "auto",
             display: "flex",
             flexDirection: "column" as const,
             alignItems: "center",
@@ -780,9 +774,9 @@ export default function RSVPGoogleSheets(props: any) {
 
         successSubtitleLarge: {
             margin: 0,
-            color: successTextColor,
+            color: successTextColor || textColor,
             fontFamily: baseFontStyle.fontFamily,
-            fontSize: "clamp(24px, 5vw, 72px)",
+            fontSize: "clamp(24px, 5vw, 64px)",
             lineHeight: 1.08,
             fontWeight: 700,
             maxWidth: 900,
@@ -1537,10 +1531,10 @@ export default function RSVPGoogleSheets(props: any) {
                                 fontWeight: 700,
                             }}
                         >
-                            {successTitle}
+                            {(successTitle || "Ricevuto!").trim() || "Ricevuto!"}
                         </div>
 
-                        <p style={s.successSubtitleLarge}>{successSubtitle}</p>
+                        <p style={s.successSubtitleLarge}>{(successSubtitle || "Grazie, abbiamo salvato la tua risposta").trim() || "Grazie, abbiamo salvato la tua risposta"}</p>
 
                         <button style={s.successResetButton} onClick={resetAll}>
                             {resetLabel}
