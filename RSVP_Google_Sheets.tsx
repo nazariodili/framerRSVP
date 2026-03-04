@@ -3,7 +3,6 @@ import { addPropertyControls, ControlType } from "framer"
 import {
     Search,
     RotateCcw,
-    ChevronRight,
     ChevronDown,
     X,
     CheckSquare,
@@ -268,8 +267,8 @@ export default function RSVPGoogleSheets(props: any) {
               ? cardBorderWidth
               : 1
 
-    async function runSearch() {
-        const q = (query || "").trim()
+    async function runSearch(rawQuery?: string, showMinCharsError = true) {
+        const q = (rawQuery ?? query ?? "").trim()
         setSearchError(null)
         setSubmitted(false)
         setSubmitError(null)
@@ -279,7 +278,8 @@ export default function RSVPGoogleSheets(props: any) {
             return
         }
         if (q.length < 2) {
-            setSearchError(searchMinCharsError)
+            if (showMinCharsError) setSearchError(searchMinCharsError)
+            else setSearchError(null)
             setResults([])
             return
         }
@@ -303,6 +303,31 @@ export default function RSVPGoogleSheets(props: any) {
         }
         setSubmitStatus("idle")
     }
+
+    React.useEffect(() => {
+        if (selectedGuest) return
+        const q = (query || "").trim()
+
+        if (!q) {
+            setResults([])
+            setHasSearched(false)
+            setSearchError(null)
+            return
+        }
+
+        if (q.length < 2) {
+            setResults([])
+            setHasSearched(false)
+            setSearchError(null)
+            return
+        }
+
+        const id = window.setTimeout(() => {
+            runSearch(q, false)
+        }, 280)
+
+        return () => window.clearTimeout(id)
+    }, [query, endpointBase, selectedGuest])
 
     // LOAD FAMILY
     async function loadFamily(guest: Guest) {
@@ -527,6 +552,10 @@ export default function RSVPGoogleSheets(props: any) {
     const requiredMenu = requireMenuIfAttending
     const requiredAllergiesWhenAttending = true
     const requiredShuttleWhenAttending = showShuttle
+    const shouldOpenSearchDropdown =
+        !selectedGuest &&
+        !!query.trim() &&
+        (searchLoading || hasSearched || results.length > 0 || !!searchError)
 
     const s = {
         resultsScroll: {
@@ -740,6 +769,49 @@ export default function RSVPGoogleSheets(props: any) {
             borderTopColor: "rgba(0,0,0,0.7)",
             animation: "rsvpSpin 0.8s linear infinite",
         },
+
+        searchInputWrap: {
+            position: "relative" as const,
+            flex: 1,
+        },
+
+        searchIconLeft: {
+            position: "absolute" as const,
+            left: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            color: mutedTextColor,
+            opacity: 0.9,
+            pointerEvents: "none" as const,
+        },
+
+        searchDropdown: {
+            marginTop: 10,
+            borderRadius: Math.max(16, Number(inputRadius) || 16),
+            border: `${UI_BORDER_WIDTH}px solid ${UI_BORDER_COLOR}`,
+            background: inputBackground,
+            overflow: "hidden" as const,
+        },
+
+        searchDropdownBody: {
+            maxHeight: 340,
+            overflowY: "auto" as const,
+            WebkitOverflowScrolling: "touch" as const,
+            padding: 10,
+            boxSizing: "border-box" as const,
+        },
+
+        searchRow: {
+            ...(baseFontStyle || {}),
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            width: "100%",
+            padding: "12px 10px",
+            borderRadius: 10,
+            cursor: "pointer",
+            boxSizing: "border-box" as const,
+        },
     } as const
 
     const spinnerCss = `
@@ -808,10 +880,12 @@ export default function RSVPGoogleSheets(props: any) {
 
                 <div style={{ marginTop: 12 }}>
                     <div style={{ display: "flex", gap: 10 }}>
-                        <div style={{ position: "relative", flex: 1 }}>
+                        <div style={s.searchInputWrap}>
+                            <Search size={20} style={s.searchIconLeft} />
                             <input
                                 style={{
                                     ...s.input,
+                                    paddingLeft: 44,
                                     paddingRight: query.trim() ? 42 : toPx(inputPaddingX),
                                 }}
                                 value={query}
@@ -823,7 +897,7 @@ export default function RSVPGoogleSheets(props: any) {
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         e.preventDefault()
-                                        runSearch()
+                                        runSearch(undefined, true)
                                     }
                                 }}
                             />
@@ -860,7 +934,7 @@ export default function RSVPGoogleSheets(props: any) {
 
                         <button
                             style={isResetMode ? s.btnInlineGhost : s.btnInline}
-                            onClick={isResetMode ? resetAll : runSearch}
+                            onClick={isResetMode ? resetAll : () => runSearch(undefined, true)}
                             disabled={
                                 (!endpointBase && !isResetMode) ||
                                 searchLoading ||
@@ -872,9 +946,7 @@ export default function RSVPGoogleSheets(props: any) {
                             }
                             title={isResetMode ? resetLabel : searchButtonLabel}
                         >
-                            {searchLoading ? (
-                                <div style={s.spinner} />
-                            ) : isResetMode ? (
+                            {isResetMode ? (
                                 <RotateCcw size={18} />
                             ) : (
                                 <Search size={18} />
@@ -883,53 +955,69 @@ export default function RSVPGoogleSheets(props: any) {
                     </div>
 
                     <AutoHeight>
-                        {searchError ? (
-                            <div style={{ ...s.error, marginTop: 10 }}>
-                                {searchError}
-                            </div>
-                        ) : null}
-
-                        {!selectedGuest && results.length > 0 ? (
-                            <div style={{ marginTop: 10, ...s.resultsScroll }}>
-                                <div style={s.list}>
-                                    {results.map((g) => (
-                                        <div
-                                            key={g.guestId}
-                                            style={s.pill(false)}
-                                            onClick={() => loadFamily(g)}
-                                            role="button"
-                                            aria-label={`Seleziona ${g.name}`}
-                                        >
-                                            <div>
-                                                <div
-                                                    style={{
-                                                        ...(baseFontStyle || {}),
-                                                        fontSize: 14,
-                                                        fontWeight: 700,
-                                                    }}
-                                                >
-                                                    {g.name}
-                                                </div>
-                                            </div>
-
-                                            <ChevronRight
-                                                size={20}
-                                                style={{ opacity: 0.6 }}
-                                                aria-hidden="true"
-                                            />
+                        {shouldOpenSearchDropdown ? (
+                            <div style={s.searchDropdown}>
+                                <div
+                                    style={{
+                                        height: 1,
+                                        background: dividerColor,
+                                        opacity: 0.8,
+                                    }}
+                                />
+                                <div style={s.searchDropdownBody}>
+                                    {searchLoading ? (
+                                        <div style={{ ...s.loadingState, marginTop: 0 }}>
+                                            <div style={s.spinner} />
+                                            <div style={s.small}>{submitLoadingLabel}</div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : null}
+                                    ) : null}
 
-                        {!selectedGuest &&
-                        hasSearched &&
-                        !searchLoading &&
-                        results.length === 0 &&
-                        !searchError ? (
-                            <div style={{ ...s.error, marginTop: 10 }}>
-                                {noResultsText}
+                                    {searchError ? (
+                                        <div style={{ ...s.error, marginTop: 0 }}>
+                                            {searchError}
+                                        </div>
+                                    ) : null}
+
+                                    {!searchLoading && !searchError && results.length > 0
+                                        ? results.map((g) => (
+                                              <div
+                                                  key={g.guestId}
+                                                  style={s.searchRow}
+                                                  onClick={() => loadFamily(g)}
+                                                  role="button"
+                                                  aria-label={`Seleziona ${g.name}`}
+                                              >
+                                                  <Search
+                                                      size={20}
+                                                      aria-hidden="true"
+                                                      style={{
+                                                          color: mutedTextColor,
+                                                          flexShrink: 0,
+                                                      }}
+                                                  />
+                                                  <div
+                                                      style={{
+                                                          ...(baseFontStyle || {}),
+                                                          fontSize: 15,
+                                                          fontWeight: 700,
+                                                          lineHeight: 1.3,
+                                                      }}
+                                                  >
+                                                      {g.name}
+                                                  </div>
+                                              </div>
+                                          ))
+                                        : null}
+
+                                    {!searchLoading &&
+                                    !searchError &&
+                                    hasSearched &&
+                                    results.length === 0 ? (
+                                        <div style={{ ...s.error, marginTop: 0 }}>
+                                            {noResultsText}
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
                         ) : null}
                     </AutoHeight>
