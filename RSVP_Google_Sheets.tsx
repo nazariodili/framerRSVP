@@ -772,18 +772,14 @@ export default function RSVPGoogleSheets(props: any) {
             padding: "20px 0",
         },
 
-        successSubtitleLarge: {
+        successMessage: {
+            ...(baseFontStyle || {}),
+            ...((titleFontStyle || {}) as React.CSSProperties),
             margin: 0,
-            color: successTextColor || textColor,
-            fontFamily: baseFontStyle.fontFamily,
-            fontSize: "clamp(24px, 5vw, 64px)",
-            lineHeight: 1.08,
-            fontWeight: 700,
-            maxWidth: 900,
-            textWrap: "balance" as const,
-            whiteSpace: "normal" as const,
-            overflowWrap: "anywhere" as const,
-        },
+            width: "100%",
+            textAlign: "center" as const,
+            color: textColor,
+        } as React.CSSProperties,
 
         successResetButton: {
             ...(baseFontStyle || {}),
@@ -1524,17 +1520,7 @@ export default function RSVPGoogleSheets(props: any) {
                             </div>
                         ) : null}
 
-                        <div
-                            style={{
-                                ...(baseFontStyle || {}),
-                                color: mutedTextColor,
-                                fontWeight: 700,
-                            }}
-                        >
-                            {(successTitle || "Ricevuto!").trim() || "Ricevuto!"}
-                        </div>
-
-                        <p style={s.successSubtitleLarge}>{(successSubtitle || "Grazie, abbiamo salvato la tua risposta").trim() || "Grazie, abbiamo salvato la tua risposta"}</p>
+                        <p style={s.successMessage}>{(successSubtitle || "Grazie, abbiamo salvato la tua risposta").trim() || "Grazie, abbiamo salvato la tua risposta"}</p>
 
                         <button style={s.successResetButton} onClick={resetAll}>
                             {resetLabel}
