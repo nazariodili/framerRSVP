@@ -7,7 +7,7 @@ import {
     X,
     CheckSquare,
     Square,
-    CheckCircle2,
+    CircleDot,
     Circle,
 } from "lucide-react"
 
@@ -656,6 +656,8 @@ export default function RSVPGoogleSheets(props: any) {
     const requiredMenu = requireMenuIfAttending
     const requiredAllergiesWhenAttending = true
     const requiredShuttleWhenAttending = showShuttle
+    const UI_ICON_SIZE = 20
+    const UI_RADIO_SIZE = 22
     const shouldOpenSearchDropdown =
         !selectedGuest &&
         !!query.trim() &&
@@ -981,9 +983,13 @@ export default function RSVPGoogleSheets(props: any) {
 
     function RadioMark({ active }: { active: boolean }) {
         return active ? (
-            <CheckCircle2 size={22} aria-hidden="true" />
+            <CircleDot size={UI_RADIO_SIZE} aria-hidden="true" />
         ) : (
-            <Circle size={22} aria-hidden="true" style={{ opacity: 0.65 }} />
+            <Circle
+                size={UI_RADIO_SIZE}
+                aria-hidden="true"
+                style={{ opacity: 0.65 }}
+            />
         )
     }
 
@@ -1033,7 +1039,7 @@ export default function RSVPGoogleSheets(props: any) {
                 <div style={{ marginTop: 12 }}>
                     <div style={{ display: "flex", gap: 10 }}>
                         <div style={s.searchInputWrap}>
-                            <Search size={20} style={s.searchIconLeft} />
+                            <Search size={UI_ICON_SIZE} style={s.searchIconLeft} />
                             <input
                                 style={{
                                     ...s.input,
@@ -1099,9 +1105,9 @@ export default function RSVPGoogleSheets(props: any) {
                             title={isResetMode ? resetLabel : searchButtonLabel}
                         >
                             {isResetMode ? (
-                                <RotateCcw size={18} />
+                                <RotateCcw size={UI_ICON_SIZE} />
                             ) : (
-                                <Search size={18} />
+                                <Search size={UI_ICON_SIZE} />
                             )}
                         </button>
                     </div>
@@ -1132,7 +1138,7 @@ export default function RSVPGoogleSheets(props: any) {
                                                   aria-label={`Seleziona ${g.name}`}
                                               >
                                                   <Search
-                                                      size={20}
+                                                      size={UI_ICON_SIZE}
                                                       aria-hidden="true"
                                                       style={{
                                                           color: mutedTextColor,
@@ -1452,7 +1458,7 @@ export default function RSVPGoogleSheets(props: any) {
                                                                     aria-hidden="true"
                                                                 >
                                                                     <ChevronDown
-                                                                        size={20}
+                                                                        size={UI_ICON_SIZE}
                                                                     />
                                                                 </div>
                                                             </div>
