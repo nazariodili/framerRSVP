@@ -238,7 +238,8 @@ export default function RSVPGoogleSheets(props: any) {
         validateShuttleErrorTemplate,
 
         // required fields UI
-        requiredAsterisk,
+        requiredPlaceholderLabel,
+        optionalPlaceholderLabel,
 
         // ✅ STYLE PROPS
         font,
@@ -551,7 +552,7 @@ export default function RSVPGoogleSheets(props: any) {
 
             if (a.attending === false) continue
 
-            if (requireMenuIfAttending && !a.menu.trim()) {
+            if (!a.menu.trim()) {
                 return formatNameMessage(validateMenuErrorTemplate, a.name)
             }
 
@@ -656,7 +657,7 @@ export default function RSVPGoogleSheets(props: any) {
         }
     }
 
-    const requiredMenu = requireMenuIfAttending
+    const requiredMenu = true
     const requiredAllergiesWhenAttending = true
     const requiredShuttleWhenAttending = showShuttle
     const UI_ICON_SIZE = 20
@@ -1331,17 +1332,17 @@ export default function RSVPGoogleSheets(props: any) {
 
                                         const menuPlaceholder = `${menuLabel}${
                                             menuIsRequired
-                                                ? requiredAsterisk
+                                                ? requiredPlaceholderLabel
                                                 : ""
                                         }…`
 
                                         const allergiesPlaceholder = `${allergiesLabel}${
                                             allergiesIsRequired
-                                                ? requiredAsterisk
+                                                ? requiredPlaceholderLabel
                                                 : ""
-                                        } (se nessuna, scrivi “Nessuna”)`
+                                        }`
 
-                                        const notesPlaceholder = `${notesLabel} (opzionale)`
+                                        const notesPlaceholder = `${notesLabel}${optionalPlaceholderLabel}`
 
                                         return (
                                             <div
@@ -1453,9 +1454,12 @@ export default function RSVPGoogleSheets(props: any) {
                                                                 }}
                                                             >
                                                                 <select
-                                                                    style={
-                                                                        s.select
-                                                                    }
+                                                                    style={{
+                                                                        ...s.select,
+                                                                        color: a.menu
+                                                                            ? inputTextColor
+                                                                            : mutedTextColor,
+                                                                    }}
                                                                     value={
                                                                         a.menu
                                                                     }
@@ -1474,8 +1478,15 @@ export default function RSVPGoogleSheets(props: any) {
                                                                     aria-label={
                                                                         menuLabel
                                                                     }
+                                                                    required={
+                                                                        menuIsRequired
+                                                                    }
                                                                 >
-                                                                    <option value="">
+                                                                    <option
+                                                                        value=""
+                                                                        disabled
+                                                                        hidden
+                                                                    >
                                                                         {
                                                                             menuPlaceholder
                                                                         }
@@ -1705,6 +1716,7 @@ export default function RSVPGoogleSheets(props: any) {
                                             style={{
                                                 ...s.error,
                                                 marginTop: 10,
+                                                marginBottom: 10,
                                             }}
                                         >
                                             {submitError}
@@ -1809,6 +1821,8 @@ RSVPGoogleSheets.defaultProps = {
         "Inserisci qui tutte le informazioni aggiuntive sul servizio bus.",
     menuLabel: "Menu",
     allergiesLabel: "Allergie / Intolleranze",
+    requiredPlaceholderLabel: " (Obbligatorio)",
+    optionalPlaceholderLabel: " (opzionale)",
     shuttleLabel: "Voglio il bus navetta",
     notesLabel: "Note",
     selectPeopleLabel: "Seleziona chi fa parte del tuo gruppo",
@@ -1844,7 +1858,6 @@ RSVPGoogleSheets.defaultProps = {
     commonBorderColor: "rgba(0,0,0,0.12)",
     commonBorderWidth: 1,
 
-    requiredAsterisk: "*",
 
     // ✅ NEW
     titleFont: {
@@ -2004,6 +2017,14 @@ addPropertyControls(RSVPGoogleSheets, {
     },
     menuLabel: { type: ControlType.String, title: "Label menu" },
     allergiesLabel: { type: ControlType.String, title: "Label allergie" },
+    requiredPlaceholderLabel: {
+        type: ControlType.String,
+        title: "Label obbligatorio",
+    },
+    optionalPlaceholderLabel: {
+        type: ControlType.String,
+        title: "Label opzionale",
+    },
     shuttleLabel: { type: ControlType.String, title: "Label navetta" },
     notesLabel: { type: ControlType.String, title: "Label note" },
     selectPeopleLabel: { type: ControlType.String, title: "Label gruppo" },
@@ -2085,11 +2106,6 @@ addPropertyControls(RSVPGoogleSheets, {
         step: 1,
     },
 
-    requiredAsterisk: {
-        type: ControlType.String,
-        title: "Asterisco obblig.",
-        defaultValue: "*",
-    },
     font: {
         type: ControlType.Font,
         title: "Font",
