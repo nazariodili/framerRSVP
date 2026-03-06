@@ -21,6 +21,7 @@ type Props = {
     eventCode: string
 
     uploadButtonLabel: string
+    uploadHintLabel: string
     refreshAriaLabel: string
     refreshingLabel: string
     errorLabel: string
@@ -53,6 +54,15 @@ type Props = {
     actionBarBottom: number
     actionBarZIndex: number
     uploadActionAriaLabel: string
+
+    uploadCardBackground: string
+    uploadCardBorderColor: string
+    uploadCardBorderWidth: number
+    uploadCardBorderStyle: React.CSSProperties["borderStyle"]
+    uploadIconColor: string
+    uploadIconSize: number
+    uploadLabelFont: React.CSSProperties
+    uploadHintFont: React.CSSProperties
 }
 
 function clamp(n: number, min: number, max: number) {
@@ -93,6 +103,7 @@ export default function WeddingPhotoWall(props: Props) {
         workerBaseUrl,
         eventCode,
         uploadButtonLabel,
+        uploadHintLabel,
         refreshAriaLabel,
         refreshingLabel,
         errorLabel,
@@ -120,6 +131,14 @@ export default function WeddingPhotoWall(props: Props) {
         actionBarBottom,
         actionBarZIndex,
         uploadActionAriaLabel,
+        uploadCardBackground,
+        uploadCardBorderColor,
+        uploadCardBorderWidth,
+        uploadCardBorderStyle,
+        uploadIconColor,
+        uploadIconSize,
+        uploadLabelFont,
+        uploadHintFont,
     } = props
 
     const UploadIcon = React.useMemo(() => getUploadIcon(uploadIcon), [uploadIcon])
@@ -620,6 +639,7 @@ WeddingPhotoWall.defaultProps = {
     workerBaseUrl: "",
     eventCode: "",
     uploadButtonLabel: "ADD A PHOTO",
+    uploadHintLabel: "",
     refreshAriaLabel: "Aggiorna foto",
     refreshingLabel: "Carico…",
     errorLabel: "Errore",
@@ -651,6 +671,21 @@ WeddingPhotoWall.defaultProps = {
     actionBarBottom: 18,
     actionBarZIndex: 1100,
     uploadActionAriaLabel: "Carica foto",
+    uploadCardBackground: "rgba(247, 231, 231, 0.85)",
+    uploadCardBorderColor: "rgba(148, 92, 106, 0.24)",
+    uploadCardBorderWidth: 2,
+    uploadCardBorderStyle: "dashed",
+    uploadIconColor: "rgba(148, 92, 106, 0.95)",
+    uploadIconSize: 38,
+    uploadLabelFont: {
+        fontSize: 12,
+        fontWeight: 600,
+        letterSpacing: "0.12em",
+    },
+    uploadHintFont: {
+        fontSize: 11,
+        fontWeight: 500,
+    },
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -844,6 +879,11 @@ addPropertyControls(WeddingPhotoWall, {
         title: "Upload · Testo",
         defaultValue: "ADD A PHOTO",
     },
+    uploadHintLabel: {
+        type: ControlType.String,
+        title: "Upload · Hint",
+        defaultValue: "",
+    },
     uploadIcon: {
         type: ControlType.Enum,
         title: "Upload · Icona",
@@ -855,6 +895,63 @@ addPropertyControls(WeddingPhotoWall, {
         type: ControlType.String,
         title: "Upload · ARIA",
         defaultValue: "Carica foto",
+    },
+    uploadCardBackground: {
+        type: ControlType.Color,
+        title: "Upload · Fill",
+        defaultValue: "rgba(247, 231, 231, 0.85)",
+    },
+    uploadCardBorderColor: {
+        type: ControlType.Color,
+        title: "Upload · Border",
+        defaultValue: "rgba(148, 92, 106, 0.24)",
+    },
+    uploadCardBorderWidth: {
+        type: ControlType.Number,
+        title: "Upload · Border W",
+        defaultValue: 2,
+        min: 0,
+        max: 12,
+        step: 1,
+    },
+    uploadCardBorderStyle: {
+        type: ControlType.Enum,
+        title: "Upload · Border S",
+        options: ["solid", "dashed", "dotted"],
+        optionTitles: ["Solid", "Dashed", "Dotted"],
+        defaultValue: "dashed",
+    },
+    uploadIconColor: {
+        type: ControlType.Color,
+        title: "Upload · Icon color",
+        defaultValue: "rgba(148, 92, 106, 0.95)",
+    },
+    uploadIconSize: {
+        type: ControlType.Number,
+        title: "Upload · Icon size",
+        defaultValue: 38,
+        min: 14,
+        max: 120,
+        step: 1,
+    },
+    uploadLabelFont: {
+        type: ControlType.Font,
+        title: "Upload · Label Font",
+        defaultValue: {
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: "0.12em",
+        },
+        controls: "extended",
+    },
+    uploadHintFont: {
+        type: ControlType.Font,
+        title: "Upload · Hint Font",
+        defaultValue: {
+            fontSize: 11,
+            fontWeight: 500,
+        },
+        controls: "extended",
     },
 
     refreshIcon: {
