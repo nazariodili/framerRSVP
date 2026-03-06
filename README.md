@@ -14,7 +14,7 @@ Contiene i componenti custom da usare nel progetto Framer.
 ### Contenuto
 - `framer-site/components/RSVP_Google_Sheets.tsx`
 - `framer-site/components/WeddingPhotoWall.tsx`
-  - UI aggiornata: action bar sticky responsive (bottom su mobile, top su desktop) con props Framer complete per posizione, spaziature, icone e stile.
+  - UI aggiornata: action bar sempre sticky bottom con props Framer dedicate (Fill, Padding, Radius, Border, Shadows, Z Index) per styling e UX.
   - Overlay gallery completamente ridisegnato: navigazione foto con frecce, tastiera (← → Esc) e swipe touch.
   - Il lightbox mostra ora l'immagine senza riquadro quadrato forzato, con visualizzazione fluida in full viewport.
 - `framer-site/README.md`

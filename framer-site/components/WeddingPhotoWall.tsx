@@ -27,9 +27,6 @@ type Props = {
 
     uploadIcon: UploadIconName
     refreshIcon: RefreshIconName
-    refreshIconColor: string
-
-
 
     columns: number
     gap: number
@@ -44,20 +41,17 @@ type Props = {
     successCheckIconSize: number
     successCheckIconColor: string
 
-    desktopBreakpoint: number
-    actionBarBackground: string
-    actionBarBorderColor: string
-    actionBarBorderWidth: number
+    actionBarFill: string
+    actionBarBorder: React.CSSProperties
     actionBarShadow: string
-    actionBarRadius: number
-    actionBarPaddingX: number
-    actionBarPaddingY: number
+    actionBarRadius: string
+    actionBarPadding: string
     actionBarGap: number
     actionIconColor: string
     actionIconSize: number
     actionBarInsetX: number
-    actionBarMobileBottom: number
-    actionBarDesktopTop: number
+    actionBarBottom: number
+    actionBarZIndex: number
     uploadActionAriaLabel: string
 }
 
@@ -102,7 +96,6 @@ export default function WeddingPhotoWall(props: Props) {
         errorLabel,
         uploadIcon,
         refreshIcon,
-        refreshIconColor,
         columns,
         gap,
         cornerRadius,
@@ -113,20 +106,17 @@ export default function WeddingPhotoWall(props: Props) {
         successOverlayColor,
         successCheckIconSize,
         successCheckIconColor,
-        desktopBreakpoint,
-        actionBarBackground,
-        actionBarBorderColor,
-        actionBarBorderWidth,
+        actionBarFill,
+        actionBarBorder,
         actionBarShadow,
         actionBarRadius,
-        actionBarPaddingX,
-        actionBarPaddingY,
+        actionBarPadding,
         actionBarGap,
         actionIconColor,
         actionIconSize,
         actionBarInsetX,
-        actionBarMobileBottom,
-        actionBarDesktopTop,
+        actionBarBottom,
+        actionBarZIndex,
         uploadActionAriaLabel,
     } = props
 
@@ -151,7 +141,6 @@ export default function WeddingPhotoWall(props: Props) {
     const [successOverlayKeys, setSuccessOverlayKeys] = React.useState<Set<string>>(
         new Set()
     )
-    const [isDesktop, setIsDesktop] = React.useState(false)
 
     const inputRef = React.useRef<HTMLInputElement | null>(null)
     const successOverlayTimeoutRef = React.useRef<number | null>(null)
@@ -346,42 +335,19 @@ export default function WeddingPhotoWall(props: Props) {
         }
     }, [])
 
-    React.useEffect(() => {
-        if (typeof window === "undefined") return
-        const breakpoint = clamp(desktopBreakpoint, 640, 1800)
-        const media = window.matchMedia(`(min-width: ${breakpoint}px)`)
-        const onChange = () => setIsDesktop(media.matches)
-        onChange()
-        media.addEventListener("change", onChange)
-        return () => media.removeEventListener("change", onChange)
-    }, [desktopBreakpoint])
-
 
     const gridTemplateColumns = React.useMemo(() => {
         const c = clamp(columns, 1, 8)
         return `repeat(${c}, minmax(0, 1fr))`
     }, [columns])
 
-    const stickyBarAnchorStyle: React.CSSProperties = isDesktop
-        ? {
-              top: clamp(actionBarDesktopTop, 0, 72),
-              bottom: "auto",
-          }
-        : {
-              top: "auto",
-              bottom: clamp(actionBarMobileBottom, 0, 120),
-          }
-
-    const stickyBarSpacer = isDesktop
-        ? clamp(actionBarDesktopTop, 0, 72) + 86
-        : clamp(actionBarMobileBottom, 0, 120) + 112
+    const stickyBarSpacer = clamp(actionBarBottom, 0, 140) + 112
 
     return (
         <div
             style={{
                 ...styles.wrap,
-                paddingTop: isDesktop ? stickyBarSpacer : 0,
-                paddingBottom: isDesktop ? 0 : stickyBarSpacer,
+                paddingBottom: stickyBarSpacer,
             }}
         >
             <input
@@ -448,18 +414,18 @@ export default function WeddingPhotoWall(props: Props) {
                     ...styles.stickyActionBarWrap,
                     left: clamp(actionBarInsetX, 0, 64),
                     right: clamp(actionBarInsetX, 0, 64),
-                    ...stickyBarAnchorStyle,
+                    bottom: clamp(actionBarBottom, 0, 140),
+                    zIndex: clamp(actionBarZIndex, 0, 999999),
                 }}
             >
                 <div
                     style={{
                         ...styles.stickyActionBar,
-                        background: actionBarBackground,
-                        borderColor: actionBarBorderColor,
-                        borderWidth: clamp(actionBarBorderWidth, 0, 6),
-                        borderRadius: clamp(actionBarRadius, 12, 999),
+                        background: actionBarFill,
+                        ...actionBarBorder,
+                        borderRadius: actionBarRadius,
                         boxShadow: actionBarShadow,
-                        padding: `${clamp(actionBarPaddingY, 6, 28)}px ${clamp(actionBarPaddingX, 10, 36)}px`,
+                        padding: actionBarPadding,
                         gap: clamp(actionBarGap, 4, 28),
                     }}
                 >
@@ -585,7 +551,6 @@ WeddingPhotoWall.defaultProps = {
     errorLabel: "Errore",
     uploadIcon: "plus-square",
     refreshIcon: "refresh-cw",
-    refreshIconColor: "rgba(0,0,0,0.8)",
     columns: 3,
     gap: 10,
     cornerRadius: 14,
@@ -596,20 +561,21 @@ WeddingPhotoWall.defaultProps = {
     successOverlayColor: "rgba(187, 247, 208, 0.58)",
     successCheckIconSize: 64,
     successCheckIconColor: "rgba(21, 128, 61, 0.95)",
-    desktopBreakpoint: 980,
-    actionBarBackground: "rgba(243, 244, 246, 0.96)",
-    actionBarBorderColor: "rgba(17, 24, 39, 0.08)",
-    actionBarBorderWidth: 1,
+    actionBarFill: "rgba(243, 244, 246, 0.96)",
+    actionBarBorder: {
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: "rgba(17, 24, 39, 0.08)",
+    },
     actionBarShadow: "0 12px 32px rgba(15, 23, 42, 0.2)",
-    actionBarRadius: 999,
-    actionBarPaddingX: 20,
-    actionBarPaddingY: 12,
+    actionBarRadius: "999px",
+    actionBarPadding: "12px 20px",
     actionBarGap: 18,
     actionIconColor: "rgba(55, 65, 81, 0.95)",
     actionIconSize: 30,
     actionBarInsetX: 18,
-    actionBarMobileBottom: 18,
-    actionBarDesktopTop: 16,
+    actionBarBottom: 18,
+    actionBarZIndex: 1100,
     uploadActionAriaLabel: "Carica foto",
 }
 
@@ -803,11 +769,6 @@ addPropertyControls(WeddingPhotoWall, {
         optionTitles: ["RefreshCw", "RotateCcw"],
         defaultValue: "refresh-cw",
     },
-    refreshIconColor: {
-        type: ControlType.Color,
-        title: "Refresh · Icon color",
-        defaultValue: "rgba(0,0,0,0.8)",
-    },
     refreshAriaLabel: {
         type: ControlType.String,
         title: "Refresh · Label",
@@ -819,60 +780,34 @@ addPropertyControls(WeddingPhotoWall, {
         defaultValue: "Carico…",
     },
 
-    desktopBreakpoint: {
-        type: ControlType.Number,
-        title: "Sticky · Desktop px",
-        defaultValue: 980,
-        min: 640,
-        max: 1800,
-        step: 10,
-    },
-    actionBarBackground: {
+    actionBarFill: {
         type: ControlType.Color,
-        title: "Sticky · Sfondo",
+        title: "Sticky · Fill",
         defaultValue: "rgba(243, 244, 246, 0.96)",
     },
-    actionBarBorderColor: {
-        type: ControlType.Color,
-        title: "Sticky · Bordo",
-        defaultValue: "rgba(17, 24, 39, 0.08)",
-    },
-    actionBarBorderWidth: {
-        type: ControlType.Number,
-        title: "Sticky · Bordo px",
-        defaultValue: 1,
-        min: 0,
-        max: 6,
-        step: 1,
-    },
-    actionBarShadow: {
-        type: ControlType.String,
-        title: "Sticky · Shadow",
-        defaultValue: "0 12px 32px rgba(15, 23, 42, 0.2)",
+    actionBarPadding: {
+        type: ControlType.Padding,
+        title: "Sticky · Padding",
+        defaultValue: "12px 20px",
     },
     actionBarRadius: {
-        type: ControlType.Number,
+        type: ControlType.BorderRadius,
         title: "Sticky · Radius",
-        defaultValue: 999,
-        min: 12,
-        max: 999,
-        step: 1,
+        defaultValue: "999px",
     },
-    actionBarPaddingX: {
-        type: ControlType.Number,
-        title: "Sticky · Padding X",
-        defaultValue: 20,
-        min: 10,
-        max: 36,
-        step: 1,
+    actionBarBorder: {
+        type: ControlType.Border,
+        title: "Sticky · Border",
+        defaultValue: {
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "rgba(17, 24, 39, 0.08)",
+        },
     },
-    actionBarPaddingY: {
-        type: ControlType.Number,
-        title: "Sticky · Padding Y",
-        defaultValue: 12,
-        min: 6,
-        max: 28,
-        step: 1,
+    actionBarShadow: {
+        type: ControlType.BoxShadow,
+        title: "Sticky · Shadows",
+        defaultValue: "0 12px 32px rgba(15, 23, 42, 0.2)",
     },
     actionBarGap: {
         type: ControlType.Number,
@@ -903,20 +838,20 @@ addPropertyControls(WeddingPhotoWall, {
         max: 64,
         step: 1,
     },
-    actionBarMobileBottom: {
+    actionBarBottom: {
         type: ControlType.Number,
-        title: "Sticky · Bottom m",
+        title: "Sticky · Bottom",
         defaultValue: 18,
         min: 0,
-        max: 120,
+        max: 140,
         step: 1,
     },
-    actionBarDesktopTop: {
+    actionBarZIndex: {
         type: ControlType.Number,
-        title: "Sticky · Top d",
-        defaultValue: 16,
+        title: "Sticky · Z Index",
+        defaultValue: 1100,
         min: 0,
-        max: 72,
+        max: 999999,
         step: 1,
     },
 
