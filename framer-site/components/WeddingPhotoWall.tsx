@@ -1,5 +1,5 @@
 import * as React from "react"
-import { addPropertyControls, ControlType } from "framer"
+import { addPropertyControls, ControlType, RenderTarget } from "framer"
 import {
     Check,
     ChevronLeft,
@@ -56,6 +56,7 @@ type Props = {
     maxFileMB: number
     newestFirst: boolean
     lazyLoadBatchSize: number
+    canvasPreviewLimit: number
 
     successOverlayDurationMs: number
     successOverlayColor: string
@@ -155,6 +156,7 @@ export default function WeddingPhotoWall(props: Props) {
         maxFileMB,
         newestFirst,
         lazyLoadBatchSize,
+        canvasPreviewLimit,
         successOverlayDurationMs,
         successOverlayColor,
         successCheckIconSize,
@@ -211,6 +213,16 @@ export default function WeddingPhotoWall(props: Props) {
     const loadMoreRef = React.useRef<HTMLDivElement | null>(null)
 
     const [visibleCount, setVisibleCount] = React.useState(photosPageSize)
+
+    const isCanvasPreview = React.useMemo(() => {
+        try {
+            return RenderTarget.current() === RenderTarget.canvas
+        } catch {
+            return false
+        }
+    }, [])
+
+    const effectiveCanvasPreviewLimit = clamp(canvasPreviewLimit, 0, 120)
 
     const hasLightbox =
         activeIndex !== null && activeIndex >= 0 && activeIndex < photos.length
@@ -429,11 +441,18 @@ export default function WeddingPhotoWall(props: Props) {
         return () => observer.disconnect()
     }, [photos.length, photosPageSize, visibleCount])
 
-    const visiblePhotos = React.useMemo(
-        () => photos.slice(0, visibleCount),
-        [photos, visibleCount]
-    )
+    const visiblePhotos = React.useMemo(() => {
+        if (isCanvasPreview && effectiveCanvasPreviewLimit > 0) {
+            return photos.slice(0, effectiveCanvasPreviewLimit)
+        }
 
+        return photos.slice(0, visibleCount)
+    }, [
+        photos,
+        visibleCount,
+        isCanvasPreview,
+        effectiveCanvasPreviewLimit,
+    ])
 
     const gridTemplateColumns = React.useMemo(() => {
         const c = clamp(columns, 1, 8)
@@ -536,7 +555,7 @@ export default function WeddingPhotoWall(props: Props) {
                     </button>
                 ))}
 
-                {visibleCount < photos.length ? (
+                {!isCanvasPreview && visibleCount < photos.length ? (
                     <div
                         ref={loadMoreRef}
                         style={{
@@ -697,6 +716,8 @@ WeddingPhotoWall.defaultProps = {
     maxFilesPerBatch: 20,
     maxFileMB: 15,
     newestFirst: true,
+    lazyLoadBatchSize: 18,
+    canvasPreviewLimit: 24,
     successOverlayDurationMs: 2000,
     successOverlayColor: "rgba(187, 247, 208, 0.58)",
     successCheckIconSize: 64,
@@ -1150,6 +1171,16 @@ addPropertyControls(WeddingPhotoWall, {
         min: 1,
         max: 120,
         step: 1,
+    },
+    canvasPreviewLimit: {
+        type: ControlType.Number,
+        title: "Canvas · Max foto",
+        defaultValue: 24,
+        min: 0,
+        max: 120,
+        step: 1,
+        description:
+            "In Framer canvas mostra solo le prime N foto per evitare rallentamenti.",
     },
     successOverlayDurationMs: {
         type: ControlType.Number,
