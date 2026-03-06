@@ -21,6 +21,7 @@ Contiene i componenti custom da usare nel progetto Framer.
   - Lazy loading progressivo della galleria: rendering iniziale a blocchi e caricamento automatico di altre foto durante lo scroll.
   - Nuovo limite preview canvas Framer (`Canvas · Max foto`) per ridurre il carico in editing mostrando solo le prime N immagini nel canvas.
   - Rimossa la card/cella di upload fissa dalla griglia foto; l'upload resta disponibile solo nella action bar sticky.
+  - Nel lightbox è disponibile un pulsante download per salvare la foto aperta in dimensione originale.
 - `framer-site/README.md`
 
 ### Come usarlo

@@ -4,6 +4,7 @@ import {
     Check,
     ChevronLeft,
     ChevronRight,
+    Download,
     ImagePlus,
     PlusSquare,
     RefreshCw,
@@ -685,6 +686,31 @@ export default function WeddingPhotoWall(props: Props) {
                         <button
                             style={{
                                 ...styles.lightboxIconButton,
+                                ...styles.lightboxDownloadButton,
+                            }}
+                            onClick={() => {
+                                const link = document.createElement("a")
+                                link.href = currentPhoto.url
+                                link.download =
+                                    currentPhoto.key
+                                        ?.split("/")
+                                        ?.pop()
+                                        ?.trim() || "foto"
+                                link.target = "_blank"
+                                link.rel = "noopener noreferrer"
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                            }}
+                            aria-label="Scarica foto in dimensione originale"
+                            title="Scarica"
+                        >
+                            <Download size={20} />
+                        </button>
+
+                        <button
+                            style={{
+                                ...styles.lightboxIconButton,
                                 ...styles.lightboxCloseButton,
                             }}
                             onClick={() => setActiveIndex(null)}
@@ -884,6 +910,12 @@ const styles: Record<string, React.CSSProperties> = {
         position: "fixed",
         top: 18,
         right: 18,
+        zIndex: 1000001,
+    },
+    lightboxDownloadButton: {
+        position: "fixed",
+        top: 18,
+        right: 68,
         zIndex: 1000001,
     },
     lightboxNavButton: {
