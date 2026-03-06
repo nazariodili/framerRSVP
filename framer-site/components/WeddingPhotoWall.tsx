@@ -55,6 +55,7 @@ type Props = {
     maxFilesPerBatch: number
     maxFileMB: number
     newestFirst: boolean
+    lazyLoadBatchSize: number
 
     successOverlayDurationMs: number
     successOverlayColor: string
@@ -137,8 +138,6 @@ function toShadowCss(shadow: BoxShadowValue) {
 }
 
 export default function WeddingPhotoWall(props: Props) {
-    const PHOTOS_PAGE_SIZE = 18
-
     const {
         workerBaseUrl,
         eventCode,
@@ -155,6 +154,7 @@ export default function WeddingPhotoWall(props: Props) {
         maxFilesPerBatch,
         maxFileMB,
         newestFirst,
+        lazyLoadBatchSize,
         successOverlayDurationMs,
         successOverlayColor,
         successCheckIconSize,
@@ -180,6 +180,8 @@ export default function WeddingPhotoWall(props: Props) {
         uploadLabelFont,
         uploadHintFont,
     } = props
+
+    const photosPageSize = clamp(lazyLoadBatchSize, 1, 120)
 
     const UploadIcon = React.useMemo(() => getUploadIcon(uploadIcon), [uploadIcon])
     const RefreshIcon = React.useMemo(
@@ -208,7 +210,7 @@ export default function WeddingPhotoWall(props: Props) {
     const touchStartXRef = React.useRef<number | null>(null)
     const loadMoreRef = React.useRef<HTMLDivElement | null>(null)
 
-    const [visibleCount, setVisibleCount] = React.useState(PHOTOS_PAGE_SIZE)
+    const [visibleCount, setVisibleCount] = React.useState(photosPageSize)
 
     const hasLightbox =
         activeIndex !== null && activeIndex >= 0 && activeIndex < photos.length
@@ -400,8 +402,8 @@ export default function WeddingPhotoWall(props: Props) {
     }, [])
 
     React.useEffect(() => {
-        setVisibleCount(PHOTOS_PAGE_SIZE)
-    }, [photos.length])
+        setVisibleCount(photosPageSize)
+    }, [photos.length, photosPageSize])
 
     React.useEffect(() => {
         const sentinel = loadMoreRef.current
@@ -413,7 +415,7 @@ export default function WeddingPhotoWall(props: Props) {
                 const first = entries[0]
                 if (!first?.isIntersecting) return
                 setVisibleCount((prev) =>
-                    Math.min(prev + PHOTOS_PAGE_SIZE, photos.length)
+                    Math.min(prev + photosPageSize, photos.length)
                 )
             },
             {
@@ -425,7 +427,7 @@ export default function WeddingPhotoWall(props: Props) {
 
         observer.observe(sentinel)
         return () => observer.disconnect()
-    }, [photos.length, visibleCount])
+    }, [photos.length, photosPageSize, visibleCount])
 
     const visiblePhotos = React.useMemo(
         () => photos.slice(0, visibleCount),
@@ -1140,6 +1142,14 @@ addPropertyControls(WeddingPhotoWall, {
         type: ControlType.Boolean,
         title: "Newest first",
         defaultValue: true,
+    },
+    lazyLoadBatchSize: {
+        type: ControlType.Number,
+        title: "Lazy · Batch",
+        defaultValue: 18,
+        min: 1,
+        max: 120,
+        step: 1,
     },
     successOverlayDurationMs: {
         type: ControlType.Number,
